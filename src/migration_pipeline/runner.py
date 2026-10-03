@@ -12,7 +12,7 @@ from psycopg import Connection
 
 
 MIGRATION_NAME = re.compile(r"^V(?P<version>\d{4})__(?P<name>[a-z0-9_]+)\.sql$")
-LOCK_NAME = "postgres-staging-migration-pipeline"
+LOCK_NAME = "postgresql-migration-pipeline"
 
 
 class MigrationError(RuntimeError):

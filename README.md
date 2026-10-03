@@ -1,4 +1,4 @@
-# PostgreSQL Staging Migration Pipeline
+# PostgreSQL Migration Pipeline
 
 A production-oriented migration gate that detects SQL migrations introduced by a staging update, verifies whether each migration already ran, applies new migrations in a single PostgreSQL transaction, and blocks deployment if anything fails.
 

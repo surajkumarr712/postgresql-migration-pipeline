@@ -39,7 +39,7 @@ wheels = [
 ]
 
 [[package]]
-name = "postgres-staging-migration-pipeline"
+name = "postgresql-migration-pipeline"
 version = "1.0.0"
 source = { editable = "." }
 dependencies = [

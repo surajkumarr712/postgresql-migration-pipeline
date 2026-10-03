@@ -1,5 +1,5 @@
 [project]
-name = "postgres-staging-migration-pipeline"
+name = "postgresql-migration-pipeline"
 version = "1.0.0"
 description = "A safe, transactional PostgreSQL migration gate for staging deployments"
 readme = "README.md"
