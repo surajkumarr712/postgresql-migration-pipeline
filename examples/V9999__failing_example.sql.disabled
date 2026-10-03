@@ -1,0 +1,3 @@
+-- Rename this file to V9999__failing_example.sql to verify rollback behavior.
+CREATE TABLE rollback_demo (id BIGINT PRIMARY KEY);
+SELECT 1 / 0;

@@ -1,0 +1,80 @@
+name: Apply PostgreSQL migrations to staging
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-postgres-migrations
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Migration gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install migration runner
+        run: python -m pip install .
+
+      - name: Detect migrations added by this staging update
+        id: detect
+        env:
+          BASE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            python scripts/detect_added_migrations.py \
+              --base "$HEAD_SHA" --head "$HEAD_SHA" --all \
+              --output changed-migrations.txt
+          else
+            python scripts/detect_added_migrations.py \
+              --base "$BASE_SHA" --head "$HEAD_SHA" \
+              --output changed-migrations.txt
+          fi
+
+      - name: Require protected staging database secret
+        if: steps.detect.outputs.count != '0'
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "STAGING_DATABASE_URL is not configured in the protected staging environment." >&2
+            exit 1
+          fi
+
+      - name: Apply new migrations transactionally
+        if: steps.detect.outputs.count != '0'
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          postgres-migrate \
+            --migrations-dir migrations \
+            --changed-file-list changed-migrations.txt \
+            --commit-sha "$GITHUB_SHA"
+
+      - name: No migrations added
+        if: steps.detect.outputs.count == '0'
+        run: echo "No new migrations were added; deployment gate is clear."
+
+  deployment-gate:
+    name: Continue deployment
+    needs: migrate
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Migration gate passed. Add the staging deployment command here."
